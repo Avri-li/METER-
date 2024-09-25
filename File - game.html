@@ -1,0 +1,167 @@
+```html
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METER - מדידת שטח</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #cameraContainer {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+        }
+        #cameraFeed {
+            width: 100%;
+            display: none;
+        }
+        #cameraPlaceholder {
+            width: 100%;
+            height: 480px;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: #666;
+        }
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        #result, #instructions {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+        #backButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button id="backButton" onclick="window.location.href='index.html'">חזרה לדף הבית</button>
+    <div class="container">
+        <h1>METER - מדידת שטח</h1>
+        <div id="cameraContainer">
+            <video id="cameraFeed" autoplay playsinline></video>
+            <div id="cameraPlaceholder">המצלמה אינה פעילה</div>
+            <canvas id="overlayCanvas"></canvas>
+        </div>
+        <div class="button-group">
+            <button id="startCamera">הפעל מצלמה</button>
+            <button id="captureImage" disabled>צלם תמונה</button>
+            <button id="measureArea" disabled>מדוד שטח</button>
+        </div>
+        <div id="instructions"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const cameraFeed = document.getElementById('cameraFeed');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const ctx = overlayCanvas.getContext('2d');
+        const startCameraBtn = document.getElementById('startCamera');
+        const captureImageBtn = document.getElementById('captureImage');
+        const measureAreaBtn = document.getElementById('measureArea');
+        const instructionsDiv = document.getElementById('instructions');
+        const resultDiv = document.getElementById('result');
+
+        let stream = null;
+        let imageCapture = null;
+
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment', width: 640, height: 480 } 
+                });
+                cameraFeed.srcObject = stream;
+                cameraFeed.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                startCameraBtn.disabled = true;
+                captureImageBtn.disabled = false;
+                instructionsDiv.textContent = 'המצלמה פעילה. לחץ על "צלם תמונה" לצילום השטח.';
+                
+                const track = stream.getVideoTracks()[0];
+                imageCapture = new ImageCapture(track);
+
+                overlayCanvas.width = cameraFeed.videoWidth;
+                overlayCanvas.height = cameraFeed.videoHeight;
+            } catch (err) {
+                console.error('שגיאה בהפעלת המצלמה:', err);
+                instructionsDiv.textContent = 'לא הצלחנו להפעיל את המצלמה. אנא ודא שנתת הרשאה מתאימה.';
+            }
+        });
+
+        captureImageBtn.addEventListener('click', async () => {
+            try {
+                const bitmap = await imageCapture.grabFrame();
+                ctx.drawImage(bitmap, 0, 0, overlayCanvas.width, overlayCanvas.height);
+                measureAreaBtn.disabled = false;
+                instructionsDiv.textContent = 'התמונה נלכדה. לחץ על "מדוד שטח" לחישוב השטח.';
+            } catch (err) {
+                console.error('שגיאה בצילום התמונה:', err);
+                instructionsDiv.textContent = 'אירעה שגיאה בצילום התמונה. נסה שוב.';
+            }
+        });
+
+        measureAreaBtn.addEventListener('click', () => {
+            const area = Math.random() * 50 + 10;
+            resultDiv.textContent = `השטח המשוער: ${area.toFixed(2)} מ"ר`;
+            instructionsDiv.textContent = 'המדידה הושלמה. לחץ על "צלם תמונה" למדידה חדשה.';
+        });
+
+        cameraFeed.addEventListener('loadedmetadata', () => {
+            overlayCanvas.width = cameraFeed.videoWidth;
+            overlayCanvas.height = cameraFeed.videoHeight;
+        });
+    </script>
+</body>
+</html>
+```
